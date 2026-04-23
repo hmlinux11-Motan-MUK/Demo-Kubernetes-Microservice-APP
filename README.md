@@ -1,43 +1,150 @@
-# Project: ecommerce-website
+# 🚀 Kubernetes Microservices E-Commerce Application
 
-A simple e-commerce website for a small business which sells apparels. Users can search for products, browse available products, view product details, upload product images, and access backend services with PostgreSQL, Redis, Docker, and JWT-based admin authentication.
+A production-style **microservices-based e-commerce platform** deployed on **Kubernetes**, built using Flask, PostgreSQL, Redis, Docker, and NGINX.
 
-## Tools used for the project
+---
 
-- Frontend: HTML, CSS, JavaScript
-- Backend: Python Flask
-- Database: PostgreSQL
-- Cache: Redis
-- Containerization: Docker, Docker Compose
-- Authentication: JWT
+## 📌 Overview
 
-## Features
+This project demonstrates how to design, containerize, and deploy a **scalable microservices architecture** using Kubernetes.
 
-- Home page with featured products
-- Products listing page
-- Product details
-- Image upload
-- PostgreSQL-backed product storage
-- Redis caching for home and products APIs
-- JWT-protected product upload
-- Docker Compose multi-container setup
+It includes:
+- Authentication (JWT-based)
+- Product management
+- Image upload service
+- Redis caching
+- PostgreSQL database
+- NGINX frontend
+- Kubernetes deployments + Ingress routing
 
-## API overview
+---
 
-The backend exposes API routes for:
+## 🏗️ Architecture
+  ┌───────────────┐
+             │   Frontend    │
+             │   (NGINX)     │
+             └───────┬───────┘
+                     │
+              Ingress (ecommerce.local)
+                     │
 
-1. `/` – health check
-2. `/home/` – featured products
-3. `/products?page=1` – products listing
-4. `/uploads/<filename>` – serve uploaded images
-5. `/upload` – upload image
-6. `/login` – admin login
-7. `/add-product` – protected product creation
+┌─────────────┬───────────────┬───────────────┐
+│ Auth Service│ Product Service│ Upload Service│
+│ (Flask) │ (Flask) │ (Flask) │
+└──────┬──────┴──────┬────────┴──────┬────────┘
+│ │ │
+JWT Auth PostgreSQL File Storage
+│
+Redis Cache
 
-## Run locally with Docker Compose
 
-From the project root:
+---
+
+## ⚙️ Tech Stack
+
+- **Backend:** Python (Flask)
+- **Frontend:** HTML, CSS, JavaScript, NGINX
+- **Database:** PostgreSQL
+- **Cache:** Redis
+- **Containerization:** Docker
+- **Orchestration:** Kubernetes
+- **Routing:** NGINX Ingress
+- **Authentication:** JWT
+
+---
+
+## 📁 Project Structure
+ecommerce-website/
+│
+├── frontend/
+├── auth-service/
+├── product-service/
+├── upload-service/
+├── k8s/
+│ ├── deployments/
+│ ├── services/
+│ ├── ingress.yaml
+│ └── config/
+│
+├── docker-compose.microservices.yaml
+└── README.md
+
+
+---
+
+## 🚀 Deployment (Kubernetes)
+
+### 1. Start Minikube
 
 ```bash
-docker compose down -v
-docker compose up -d --build
+minikube start
+minikube addons enable ingress
+
+sudo nano /etc/hosts
+
+<MINIKUBE_IP> ecommerce.local
+
+kubectl apply -f k8s/
+
+kubectl get pods -n ecommerce
+kubectl get ingress -n ecommerce
+
+http://ecommerce.local/home.html
+http://ecommerce.local/products.html?page=1
+http://ecommerce.local/login.html
+http://ecommerce.local/upload-product.html
+
+🔐 Default Credentials
+Username: admin
+Password: admin123
+
+🔄 Application Flow
+User logs in (JWT token generated)
+Upload image → Upload Service
+Add product → Product Service
+Product stored in PostgreSQL
+Redis caches product responses
+Frontend displays products via API
+
+🧪 API Testing
+
+Login
+curl -X POST http://ecommerce.local/login \
+-H "Content-Type: application/json" \
+-d '{"username":"admin","password":"admin123"}'
+
+Upload Image
+curl -X POST http://ecommerce.local/upload \
+-F "image=@image.jpg"
+
+Add Product
+curl -X POST http://ecommerce.local/add-product \
+-H "Authorization: Bearer <TOKEN>" \
+-H "Content-Type: application/json" \
+-d '{ ... }'
+
+📊 Logging & Monitoring
+
+View logs
+
+kubectl logs -n ecommerce deployment/product-service
+kubectl logs -n ecommerce deployment/auth-service
+
+Live logs (recommended)
+
+kubetail -n ecommerce -t
+
+🛠️ Features
+✔ Microservices architecture
+✔ Kubernetes deployments
+✔ NGINX Ingress routing
+✔ JWT authentication
+✔ Image upload system
+✔ Redis caching
+✔ Persistent storage (PVC)
+✔ Fully containerized services
+
+👨‍💻 Author
+
+Hamza Motan
+Cloud Service Technical Specialist
