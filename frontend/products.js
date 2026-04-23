@@ -2,9 +2,7 @@ import { navbar } from "./header.js";
 
 function showContent() {
     const contentDiv = document.getElementById("content-container");
-    if (contentDiv) {
-        contentDiv.style.display = "block";
-    }
+    if (contentDiv) contentDiv.style.display = "block";
 }
 
 async function render_products() {
@@ -12,29 +10,22 @@ async function render_products() {
     const urlParams = new URLSearchParams(queryString);
     const page = urlParams.get("page") || 1;
 
-    const URL = `http://localhost:3002/products?page=${page}`;
+    const URL = `/products?page=${page}`;
 
     try {
         const response = await fetch(URL, {
             method: "GET",
-            mode: "cors",
-            headers: {
-                "Accept": "application/json"
-            }
+            headers: { "Accept": "application/json" }
         });
 
         const result = await response.json();
-        console.log("Products API response:", result);
 
         const productsContainerTitle = document.getElementById("title");
         const productsGrid = document.getElementById("product-grid");
         const paginationButtons = document.getElementById("text-right");
         const paginationP = document.getElementById("text-right-p");
 
-        if (!productsContainerTitle || !productsGrid) {
-            console.error("Missing required HTML elements");
-            return;
-        }
+        if (!productsContainerTitle || !productsGrid) return;
 
         productsGrid.innerHTML = "";
         if (paginationButtons) paginationButtons.innerHTML = "";
@@ -43,13 +34,10 @@ async function render_products() {
         if (result.products && result.products.length > 0) {
             const currentPage = result.page || 1;
             const totalPages = result.pages || 1;
-            const products = result.products;
 
             productsContainerTitle.innerHTML = "Products";
 
-            for (let i = 0; i < products.length; i++) {
-                const product = products[i];
-
+            for (const product of result.products) {
                 const productWrapper = document.createElement("a");
                 productWrapper.href = `./product-details.html?product_id=${product.product_ID}`;
                 productWrapper.classList.add("product-link");
@@ -60,19 +48,11 @@ async function render_products() {
                 productWrapper.appendChild(productDiv);
 
                 const productImg = document.createElement("img");
-
-                if (product.product_image && product.product_image.startsWith("/uploads/")) {
-                    productImg.src = `http://localhost:3003${product.product_image}`;
-                } else {
-                    productImg.src = product.product_image || "./shopping-cart.png";
-                }
-
+                productImg.src = product.product_image || "./shopping-cart.png";
                 productImg.alt = product.product_title;
                 productImg.onerror = function () {
-                    console.error("Image failed to load:", productImg.src);
                     productImg.src = "./shopping-cart.png";
                 };
-
                 productDiv.appendChild(productImg);
 
                 const productH4 = document.createElement("h4");
@@ -117,10 +97,6 @@ async function render_products() {
         }
     } catch (error) {
         console.error("Products page error:", error);
-        const productsContainerTitle = document.getElementById("title");
-        if (productsContainerTitle) {
-            productsContainerTitle.innerHTML = "Failed to load products";
-        }
     }
 }
 

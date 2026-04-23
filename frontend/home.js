@@ -2,28 +2,22 @@ import { navbar } from "./header.js";
 
 export function showContent() {
     const contentDiv = document.getElementById("content-container");
-    if (contentDiv) {
-        contentDiv.style.display = "block";
-    }
+    if (contentDiv) contentDiv.style.display = "block";
 }
 
 export async function render_featured_content() {
-    const URL = "http://localhost:3002/home/";
+    const URL = "/home/";
 
     try {
         const response = await fetch(URL, {
             method: "GET",
-            mode: "cors",
-            headers: {
-                "Accept": "application/json"
-            }
+            headers: { "Accept": "application/json" }
         });
 
         const result = await response.json();
 
         const productsContainerTitle = document.getElementById("title");
         const productsGrid = document.getElementById("product-grid");
-
         if (!productsContainerTitle || !productsGrid) return;
 
         productsGrid.innerHTML = "";
@@ -31,9 +25,7 @@ export async function render_featured_content() {
         if (result.products && result.products.length > 0) {
             productsContainerTitle.innerHTML = "Featured Products";
 
-            for (let i = 0; i < result.products.length; i++) {
-                const product = result.products[i];
-
+            for (const product of result.products) {
                 const productWrapper = document.createElement("a");
                 productWrapper.href = `./product-details.html?product_id=${product.product_ID}`;
                 productWrapper.classList.add("product-link");
@@ -44,12 +36,7 @@ export async function render_featured_content() {
                 productWrapper.appendChild(productDiv);
 
                 const productImg = document.createElement("img");
-                if (product.product_image && product.product_image.startsWith("/uploads/")) {
-                    productImg.src = `http://localhost:3003${product.product_image}`;
-                } else {
-                    productImg.src = product.product_image || "./shopping-cart.png";
-                }
-
+                productImg.src = product.product_image || "./shopping-cart.png";
                 productImg.alt = product.product_title;
                 productImg.onerror = function () {
                     productImg.src = "./shopping-cart.png";

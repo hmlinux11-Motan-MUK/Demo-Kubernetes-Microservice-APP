@@ -5,14 +5,17 @@ __pycache__/
 # Env
 .env
 
-# Uploads (important - avoid large files)
-backend/uploads/*
-
-# Node (if later added)
-node_modules/
-
 # Docker
 *.log
 
-# VS Code
-.vscode/
+# OS
+.DS_Store
+
+# Node
+node_modules/
+
+# Uploads
+upload-service/uploads/
+
+# Kubernetes temp
+*.swp

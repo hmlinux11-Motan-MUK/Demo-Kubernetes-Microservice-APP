@@ -4,7 +4,6 @@ async function uploadAndSaveProduct() {
   status.innerText = "Uploading...";
 
   const token = localStorage.getItem("token");
-  console.log("Token:", token);
 
   if (!token) {
     status.style.color = "red";
@@ -26,13 +25,12 @@ async function uploadAndSaveProduct() {
   formData.append("image", file);
 
   try {
-    const uploadResponse = await fetch("http://localhost:3003/upload", {
+    const uploadResponse = await fetch("/upload", {
       method: "POST",
       body: formData
     });
 
     const uploadResult = await uploadResponse.json();
-    console.log("Upload response:", uploadResult);
 
     if (!uploadResponse.ok) {
       status.style.color = "red";
@@ -51,9 +49,7 @@ async function uploadAndSaveProduct() {
       catid: parseInt(document.getElementById("catid").value, 10)
     };
 
-    console.log("Product payload:", productData);
-
-    const productResponse = await fetch("http://localhost:3002/add-product", {
+    const productResponse = await fetch("/add-product", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -63,7 +59,6 @@ async function uploadAndSaveProduct() {
     });
 
     const productResult = await productResponse.json();
-    console.log("Add product response:", productResult);
 
     if (!productResponse.ok) {
       status.style.color = "red";
