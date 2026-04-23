@@ -1,12 +1,23 @@
-FROM python
+FROM python:3.11-slim
 
-WORKDIR /backend
+WORKDIR /app
 
-COPY . /backend/
+COPY requirements.txt .
 
-RUN pip install -r requirements.txt 
-RUN pip list
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PIP_ROOT_USER_ACTION=ignore
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
 
 EXPOSE 3000
 
-CMD ["python3", "-u", "backend.py"]
+CMD ["python", "backend.py"]

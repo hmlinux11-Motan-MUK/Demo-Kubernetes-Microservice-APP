@@ -2,6 +2,7 @@
 - declaration of database objects
 '''
 
+import os
 import psycopg2
 
 
@@ -9,7 +10,12 @@ class PostgresDB:
 
     def __init__(self):
         self.conn = psycopg2.connect(
-            database="unbxd", user="postgres", password="12345", host="database", port=5432)
+            database=os.getenv("POSTGRES_DB"),
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD"),
+            host=os.getenv("POSTGRES_HOST"),
+            port=os.getenv("POSTGRES_PORT")
+        )
         self.cursor = self.conn.cursor()
 
     # create database tables if it does not exist
@@ -18,7 +24,8 @@ class PostgresDB:
             create table if not exists category_table(
                 id serial,
                 category text,
-                parent_id int)
+                parent_id int
+            )
         ''')
         self.cursor.execute('''
             create table if not exists productinfo(
@@ -29,8 +36,9 @@ class PostgresDB:
                 product_price text,
                 product_availability text,
                 product_description text,
-                catid int);
-            ''')
+                catid int
+            );
+        ''')
         print("Created database...")
         self.conn.commit()
 
@@ -42,11 +50,12 @@ class PostgresDB:
 
     # perform the operation specified by the user using the given parameters
     def operation(self, operation, params=None, res=None):
-        if params != None:
+        if params is not None:
             self.cursor.execute(operation, params)
             self.conn.commit()
         else:
             self.cursor.execute(operation)
+
         if res == 1:
             result = self.cursor.fetchall()
             return result

@@ -1,9 +1,18 @@
-/backend/builder.log
-/frontend/builder.log
-out.json
-update.json
-/config
-/.vscode
-demo.py
-curl.txt
-logs.txt
+# Python
+__pycache__/
+*.pyc
+
+# Env
+.env
+
+# Uploads (important - avoid large files)
+backend/uploads/*
+
+# Node (if later added)
+node_modules/
+
+# Docker
+*.log
+
+# VS Code
+.vscode/
