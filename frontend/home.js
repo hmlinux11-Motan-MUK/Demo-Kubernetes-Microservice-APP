@@ -1,67 +1,75 @@
 import { navbar } from "./header.js";
 
-function showContent() {
+export function showContent() {
     const contentDiv = document.getElementById("content-container");
-    contentDiv.style.display = "block";
+    if (contentDiv) {
+        contentDiv.style.display = "block";
+    }
 }
 
-async function render_featured_content() {
-    const URL = "http://localhost:3000/home/";
+export async function render_featured_content() {
+    const URL = "http://localhost:3002/home/";
 
-    let response = await fetch(URL, {
-        method: "GET",
-        mode: "cors",
-        headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
-    });
-
-    let result = await response.json();
-
-    if (result.products && result.products.length !== 0) {
-        let products = result.products;
-        let products_grid = document.getElementById("product-grid");
-        let products_container_title = document.getElementById("title");
-
-        products_container_title.innerHTML = "Featured Products";
-        products_grid.innerHTML = "";
-
-        for (let i = 0; i < products.length; i++) {
-            let product = products[i];
-
-            let product_wrapper = document.createElement("a");
-            product_wrapper.href = `./product-details.html?product_id=${product.product_ID}`;
-            product_wrapper.classList.add("product-link");
-            products_grid.appendChild(product_wrapper);
-
-            let product_div = document.createElement("div");
-            product_div.classList.add("product");
-            product_wrapper.appendChild(product_div);
-
-            let product_img = document.createElement("img");
-
-            if (product.product_image.startsWith("/uploads/")) {
-                product_img.src = `http://localhost:3000${product.product_image}`;
-            } else {
-                product_img.src = product.product_image;
+    try {
+        const response = await fetch(URL, {
+            method: "GET",
+            mode: "cors",
+            headers: {
+                "Accept": "application/json"
             }
+        });
 
-            product_img.alt = product.product_title;
-            product_div.appendChild(product_img);
+        const result = await response.json();
 
-            let product_h4 = document.createElement("h4");
-            product_h4.classList.add("product-title");
-            product_h4.innerHTML = product.product_title;
-            product_div.appendChild(product_h4);
+        const productsContainerTitle = document.getElementById("title");
+        const productsGrid = document.getElementById("product-grid");
 
-            let product_p = document.createElement("p");
-            product_p.innerHTML = "$" + product.product_price;
-            product_div.appendChild(product_p);
+        if (!productsContainerTitle || !productsGrid) return;
+
+        productsGrid.innerHTML = "";
+
+        if (result.products && result.products.length > 0) {
+            productsContainerTitle.innerHTML = "Featured Products";
+
+            for (let i = 0; i < result.products.length; i++) {
+                const product = result.products[i];
+
+                const productWrapper = document.createElement("a");
+                productWrapper.href = `./product-details.html?product_id=${product.product_ID}`;
+                productWrapper.classList.add("product-link");
+                productsGrid.appendChild(productWrapper);
+
+                const productDiv = document.createElement("div");
+                productDiv.classList.add("product");
+                productWrapper.appendChild(productDiv);
+
+                const productImg = document.createElement("img");
+                if (product.product_image && product.product_image.startsWith("/uploads/")) {
+                    productImg.src = `http://localhost:3003${product.product_image}`;
+                } else {
+                    productImg.src = product.product_image || "./shopping-cart.png";
+                }
+
+                productImg.alt = product.product_title;
+                productImg.onerror = function () {
+                    productImg.src = "./shopping-cart.png";
+                };
+                productDiv.appendChild(productImg);
+
+                const productH4 = document.createElement("h4");
+                productH4.classList.add("product-title");
+                productH4.innerHTML = product.product_title;
+                productDiv.appendChild(productH4);
+
+                const productP = document.createElement("p");
+                productP.innerHTML = "$" + product.product_price;
+                productDiv.appendChild(productP);
+            }
+        } else {
+            productsContainerTitle.innerHTML = "No Featured Products";
         }
-    } else {
-        let products_container_title = document.getElementById("title");
-        products_container_title.innerHTML = "No Featured Products";
+    } catch (error) {
+        console.error("Home page error:", error);
     }
 }
 

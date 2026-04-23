@@ -1,10 +1,13 @@
 async function uploadAndSaveProduct() {
   const status = document.getElementById("status");
+  status.style.color = "black";
   status.innerText = "Uploading...";
 
   const token = localStorage.getItem("token");
+  console.log("Token:", token);
 
   if (!token) {
+    status.style.color = "red";
     status.innerText = "Please login first.";
     window.location.href = "login.html";
     return;
@@ -14,6 +17,7 @@ async function uploadAndSaveProduct() {
   const file = fileInput.files[0];
 
   if (!file) {
+    status.style.color = "red";
     status.innerText = "Please select an image.";
     return;
   }
@@ -22,14 +26,16 @@ async function uploadAndSaveProduct() {
   formData.append("image", file);
 
   try {
-    const uploadResponse = await fetch("http://localhost:3000/upload", {
+    const uploadResponse = await fetch("http://localhost:3003/upload", {
       method: "POST",
       body: formData
     });
 
     const uploadResult = await uploadResponse.json();
+    console.log("Upload response:", uploadResult);
 
     if (!uploadResponse.ok) {
+      status.style.color = "red";
       status.innerText = uploadResult.error || "Image upload failed.";
       return;
     }
@@ -45,7 +51,9 @@ async function uploadAndSaveProduct() {
       catid: parseInt(document.getElementById("catid").value, 10)
     };
 
-    const productResponse = await fetch("http://localhost:3000/add-product", {
+    console.log("Product payload:", productData);
+
+    const productResponse = await fetch("http://localhost:3002/add-product", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -55,8 +63,10 @@ async function uploadAndSaveProduct() {
     });
 
     const productResult = await productResponse.json();
+    console.log("Add product response:", productResult);
 
     if (!productResponse.ok) {
+      status.style.color = "red";
       status.innerText = productResult.error || "Product save failed.";
       return;
     }
@@ -65,6 +75,7 @@ async function uploadAndSaveProduct() {
     status.innerText = "Product uploaded and saved successfully.";
   } catch (error) {
     console.error("Upload flow error:", error);
-    status.innerText = error.message || "Something went wrong.";
+    status.style.color = "red";
+    status.innerText = error.message || "Failed to fetch";
   }
 }

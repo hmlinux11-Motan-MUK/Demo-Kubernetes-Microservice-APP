@@ -3,35 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <title>Add Product</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-    }
-    input, textarea, button {
-      display: block;
-      width: 100%;
-      margin-bottom: 12px;
-      padding: 10px;
-    }
-  </style>
+  <link rel="stylesheet" href="./upload-product.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <h2>Add Product</h2>
 
-  <input type="text" id="product_ID" placeholder="Product ID" />
-  <input type="text" id="product_title" placeholder="Product Title" />
-  <input type="text" id="product_name" placeholder="Product Name" />
-  <input type="text" id="product_price" placeholder="Product Price" />
-  <input type="text" id="product_availability" placeholder="Availability" />
-  <textarea id="product_description" placeholder="Description"></textarea>
-  <input type="number" id="catid" placeholder="Category ID" />
-  <input type="file" id="imageFile" />
+  <div class="container">
+    <div class="card">
+      <h2>Add New Product</h2>
 
-  <button onclick="uploadAndSaveProduct()">Upload Product</button>
+      <div class="form-grid">
+        <input type="text" id="product_ID" placeholder="Product ID" />
+        <input type="text" id="product_title" placeholder="Product Title" />
+        <input type="text" id="product_name" placeholder="Product Name" />
+        <input type="text" id="product_price" placeholder="Product Price" />
+        <input type="text" id="product_availability" placeholder="Availability" />
+        <input type="number" id="catid" placeholder="Category ID" />
+      </div>
 
-  <p id="status"></p>
+      <textarea id="product_description" placeholder="Product Description"></textarea>
+
+      <div class="file-upload">
+        <input type="file" id="imageFile" />
+      </div>
+
+      <button onclick="uploadAndSaveProduct()">Upload Product</button>
+
+      <p id="status"></p>
+    </div>
+  </div>
 
   <script src="upload-product.js"></script>
 </body>

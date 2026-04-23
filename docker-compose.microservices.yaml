@@ -1,0 +1,82 @@
+services:
+  database:
+    image: postgres:15
+    container_name: ms-database
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ms_postgres_data:/var/lib/postgresql/data
+    networks:
+      - ms-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ms-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - ms-net
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
+    networks:
+      - ms-net
+
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3002:3002"
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ms-net
+
+  upload-service:
+    build: ./upload-service
+    container_name: upload-service
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./upload-service/uploads:/app/uploads
+    networks:
+      - ms-net
+
+  frontend:
+    build: ./frontend
+    container_name: ms-frontend
+    restart: always
+    ports:
+      - "8080:80"
+    networks:
+      - ms-net
+
+volumes:
+  ms_postgres_data:
+
+networks:
+  ms-net:
