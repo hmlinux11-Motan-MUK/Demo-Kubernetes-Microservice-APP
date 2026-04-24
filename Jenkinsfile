@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
         SONAR_PROJECT_KEY = 'ecommerce-k8s-app'
-        SONAR_HOST_URL = 'http://host.docker.internal:9000'
+        SONAR_HOST_URL = 'http://localhost:9000'
 
         FRONTEND_IMAGE = 'hmlinux11/ecommerce-frontend'
         AUTH_IMAGE = 'hmlinux11/auth-service'
