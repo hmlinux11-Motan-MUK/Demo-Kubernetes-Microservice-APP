@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
-        DOCKERHUB_USER = 'hmlinux11'
+        SONAR_PROJECT_KEY = 'ecommerce-k8s-app'
+        SONAR_HOST_URL = 'http://host.docker.internal:9000'
 
         FRONTEND_IMAGE = 'hmlinux11/ecommerce-frontend'
         AUTH_IMAGE = 'hmlinux11/auth-service'
@@ -19,6 +20,37 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('SonarQube Scan') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        docker run --rm \
+                          --network host \
+                          -e SONAR_HOST_URL=$SONAR_HOST_URL \
+                          -e SONAR_TOKEN=$SONAR_TOKEN \
+                          -v "$PWD:/usr/src" \
+                          sonarsource/sonar-scanner-cli \
+                          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+                          -Dsonar.projectName=$SONAR_PROJECT_KEY \
+                          -Dsonar.sources=/usr/src
+                    '''
+                }
+            }
+        }
+
+        stage('Trivy Filesystem Scan') {
+            steps {
+                sh '''
+                    docker run --rm \
+                      -v "$PWD:/project" \
+                      aquasec/trivy fs \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 0 \
+                      /project
+                '''
             }
         }
 
@@ -52,6 +84,17 @@ pipeline {
             }
         }
 
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $FRONTEND_IMAGE:$IMAGE_TAG
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $AUTH_IMAGE:$IMAGE_TAG
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $PRODUCT_IMAGE:$IMAGE_TAG
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $UPLOAD_IMAGE:$IMAGE_TAG
+                '''
+            }
+        }
+
         stage('Push Docker Images') {
             steps {
                 sh '''
@@ -72,30 +115,22 @@ pipeline {
             steps {
                 sh '''
                     kubectl apply -f k8s/namespace.yaml
-
                     kubectl apply -f k8s/configmap.yaml
                     kubectl apply -f k8s/secret.yaml
-
                     kubectl apply -f k8s/postgres-pvc.yaml
                     kubectl apply -f k8s/postgres-deployment.yaml
                     kubectl apply -f k8s/postgres-service.yaml
-
                     kubectl apply -f k8s/redis-deployment.yaml
                     kubectl apply -f k8s/redis-service.yaml
-
                     kubectl apply -f k8s/auth-deployment.yaml
                     kubectl apply -f k8s/auth-service.yaml
-
                     kubectl apply -f k8s/product-deployment.yaml
                     kubectl apply -f k8s/product-service.yaml
-
                     kubectl apply -f k8s/upload-pvc.yaml
                     kubectl apply -f k8s/upload-deployment.yaml
                     kubectl apply -f k8s/upload-service.yaml
-
                     kubectl apply -f k8s/frontend-deployment.yaml
                     kubectl apply -f k8s/frontend-service.yaml
-
                     kubectl apply -f k8s/ingress.yaml
                 '''
             }
@@ -129,11 +164,11 @@ pipeline {
 
     post {
         success {
-            echo 'CI/CD pipeline completed successfully.'
+            echo 'DevSecOps CI/CD pipeline completed successfully.'
         }
 
         failure {
-            echo 'CI/CD pipeline failed. Check Jenkins logs.'
+            echo 'DevSecOps CI/CD pipeline failed. Check Jenkins logs.'
         }
 
         always {
