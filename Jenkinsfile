@@ -44,6 +44,25 @@ pipeline {
             }
         }
 
+        stage('GitLeaks Secret Scan') {
+            steps {
+                sh '''
+                    mkdir -p gitleaks-report
+
+                    docker run --rm \
+                        -v "$PWD:/repo" \
+                        zricethezav/gitleaks:latest \
+                        detect \
+                        --source="/repo" \
+                        --report-format=json \
+                        --report-path="/repo/gitleaks-report/gitleaks-report.json" \
+                        --no-git || true
+
+                    cat gitleaks-report/gitleaks-report.json || true
+                '''
+             }
+        }
+
         stage('OWASP Dependency Scan') {
             steps {
                 sh '''
@@ -204,10 +223,39 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
+                    set +e
+
                     kubectl rollout status deployment/frontend -n $K8S_NAMESPACE
+                    FRONTEND_STATUS=$?
+
                     kubectl rollout status deployment/auth-service -n $K8S_NAMESPACE
+                    AUTH_STATUS=$?
+
                     kubectl rollout status deployment/product-service -n $K8S_NAMESPACE
+                    PRODUCT_STATUS=$?
+
                     kubectl rollout status deployment/upload-service -n $K8S_NAMESPACE
+                    UPLOAD_STATUS=$?
+
+                    if [ $FRONTEND_STATUS -ne 0 ]; then
+                        kubectl rollout undo deployment/frontend -n $K8S_NAMESPACE
+                        exit 1
+                    fi
+
+                    if [ $AUTH_STATUS -ne 0 ]; then
+                        kubectl rollout undo deployment/auth-service -n $K8S_NAMESPACE
+                        exit 1
+                    fi
+
+                    if [ $PRODUCT_STATUS -ne 0 ]; then
+                        kubectl rollout undo deployment/product-service -n $K8S_NAMESPACE
+                        exit 1
+                    fi
+
+                    if [ $UPLOAD_STATUS -ne 0 ]; then
+                        kubectl rollout undo deployment/upload-service -n $K8S_NAMESPACE
+                        exit 1
+                    fi
 
                     kubectl get pods -n $K8S_NAMESPACE
                     kubectl get ingress -n $K8S_NAMESPACE
@@ -237,7 +285,7 @@ pipeline {
         always {
             sh 'ls -R trivy-report dependency-check-report zap-report || true'
 
-            archiveArtifacts artifacts: 'trivy-report/**/*,dependency-check-report/**/*,zap-report/**/*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'trivy-report/**/*,dependency-check-report/**/*,zap-report/**/*,gitleaks-report/**/*', allowEmptyArchive: true
 
             sh 'docker logout || true'
         }
@@ -260,7 +308,7 @@ URL: ${env.BUILD_URL}
 Security reports attached if generated.
 """,
                 to: "${ALERT_EMAIL}",
-                attachmentsPattern: "trivy-report/**/*.txt,dependency-check-report/**/*.html,zap-report/**/*.html"
+                attachmentsPattern: "trivy-report/**/*.txt,dependency-check-report/**/*.html,zap-report/**/*.html,gitleaks-report/**/*.json"
             )
         }
     }
