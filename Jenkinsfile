@@ -58,6 +58,7 @@ pipeline {
                         --report-path="/repo/gitleaks-report/gitleaks-report.json" \
                         --no-git || true
 
+                    ls -l gitleaks-report || true
                     cat gitleaks-report/gitleaks-report.json || true
                 '''
              }
