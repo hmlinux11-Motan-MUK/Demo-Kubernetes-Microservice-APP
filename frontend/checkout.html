@@ -1,39 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Checkout</title>
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
 
-<header>
-    <h1>Checkout</h1>
-</header>
+<body class="checkout-page">
 
-<div class="container">
+    <div class="checkout-container">
 
-    <h2>Order Summary</h2>
-    <div id="cart-items"></div>
+        <!-- LEFT: CUSTOMER FORM -->
+        <div class="checkout-card">
+            <h2>Customer Details</h2>
 
-    <h3>Total: $<span id="total">0</span></h3>
+            <form class="checkout-form">
+                <input type="text" placeholder="Full Name" required>
+                <input type="email" placeholder="Email" required>
+                <textarea placeholder="Address" required></textarea>
 
-    <hr>
+                <button class="checkout-btn">Place Order</button>
+            </form>
+        </div>
 
-    <h2>Customer Details</h2>
+        <!-- RIGHT: ORDER SUMMARY -->
+        <div class="checkout-card">
+            <h2>Order Summary</h2>
 
-    <form id="checkout-form">
-        <input type="text" id="name" placeholder="Full Name" required />
-        <input type="email" id="email" placeholder="Email" required />
-        <input type="text" id="address" placeholder="Address" required />
+            <div class="cart-item">
+                <span class="cart-item-title">Product 1</span>
+                <span class="cart-item-price">$50</span>
+            </div>
 
-        <button type="submit">Place Order</button>
-    </form>
+            <div class="cart-item">
+                <span class="cart-item-title">Product 2</span>
+                <span class="cart-item-price">$30</span>
+            </div>
 
-    <p id="message"></p>
+            <div class="order-total">
+                <span>Total</span>
+                <span>$80</span>
+            </div>
 
-</div>
+            <p id="message"></p>
+        </div>
 
-<script src="checkout.js"></script>
+    </div>
 
 </body>
 </html>
