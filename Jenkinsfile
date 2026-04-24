@@ -13,17 +13,19 @@ pipeline {
 
         IMAGE_TAG = "${BUILD_NUMBER}"
         K8S_NAMESPACE = 'ecommerce'
+        APP_URL = 'http://ecommerce.local/home.html'
+
+        ALERT_EMAIL = 'hm.linux11@gmail.com'
     }
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout scm
             }
         }
 
-        stage('SonarQube Scan') {
+        stage('SonarQube SAST Scan') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
@@ -35,21 +37,46 @@ pipeline {
                           sonarsource/sonar-scanner-cli \
                           -Dsonar.projectKey=$SONAR_PROJECT_KEY \
                           -Dsonar.projectName=$SONAR_PROJECT_KEY \
-                          -Dsonar.sources=/usr/src
+                          -Dsonar.sources=/usr/src \
+                          -Dsonar.exclusions=**/node_modules/**,**/.git/**,**/trivy-report/**,**/zap-report/**,**/dependency-check-report/**
                     '''
                 }
+            }
+        }
+
+        stage('OWASP Dependency Scan') {
+            steps {
+                sh '''
+                    mkdir -p dependency-check-report
+
+                    docker run --rm \
+                      -v "$PWD:/src" \
+                      -v "$PWD/dependency-check-report:/report" \
+                      owasp/dependency-check:latest \
+                      --scan /src \
+                      --format HTML \
+                      --out /report \
+                      --disableAssembly || true
+                '''
             }
         }
 
         stage('Trivy Filesystem Scan') {
             steps {
                 sh '''
+                    mkdir -p trivy-report
+
                     docker run --rm \
                       -v "$PWD:/project" \
+                      -v "$PWD/trivy-report:/report" \
                       aquasec/trivy fs \
                       --severity HIGH,CRITICAL \
+                      --format table \
+                      --output /report/trivy-filesystem.txt \
                       --exit-code 0 \
                       /project
+
+                    cat trivy-report/trivy-filesystem.txt || true
                 '''
             }
         }
@@ -87,10 +114,37 @@ pipeline {
         stage('Trivy Image Scan') {
             steps {
                 sh '''
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $FRONTEND_IMAGE:$IMAGE_TAG
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $AUTH_IMAGE:$IMAGE_TAG
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $PRODUCT_IMAGE:$IMAGE_TAG
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --exit-code 0 $UPLOAD_IMAGE:$IMAGE_TAG
+                    mkdir -p trivy-report
+
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/trivy-report:/report" aquasec/trivy image \
+                      --severity HIGH,CRITICAL \
+                      --format table \
+                      --output /report/frontend-image.txt \
+                      --exit-code 0 \
+                      $FRONTEND_IMAGE:$IMAGE_TAG
+
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/trivy-report:/report" aquasec/trivy image \
+                      --severity HIGH,CRITICAL \
+                      --format table \
+                      --output /report/auth-image.txt \
+                      --exit-code 0 \
+                      $AUTH_IMAGE:$IMAGE_TAG
+
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/trivy-report:/report" aquasec/trivy image \
+                      --severity HIGH,CRITICAL \
+                      --format table \
+                      --output /report/product-image.txt \
+                      --exit-code 0 \
+                      $PRODUCT_IMAGE:$IMAGE_TAG
+
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/trivy-report:/report" aquasec/trivy image \
+                      --severity HIGH,CRITICAL \
+                      --format table \
+                      --output /report/upload-image.txt \
+                      --exit-code 0 \
+                      $UPLOAD_IMAGE:$IMAGE_TAG
+
+                    cat trivy-report/*.txt || true
                 '''
             }
         }
@@ -160,21 +214,51 @@ pipeline {
                 '''
             }
         }
+
+        stage('OWASP ZAP DAST Scan') {
+            steps {
+                sh '''
+                    mkdir -p zap-report
+
+                    docker run --rm \
+                      --network host \
+                      -v "$PWD/zap-report:/zap/wrk" \
+                      ghcr.io/zaproxy/zaproxy:stable \
+                      zap-baseline.py \
+                      -t $APP_URL \
+                      -r zap-report.html \
+                      -I || true
+                '''
+            }
+        }
     }
 
     post {
+        always {
+            archiveArtifacts artifacts: 'trivy-report/*.txt,dependency-check-report/*,zap-report/*', allowEmptyArchive: true
+            sh 'docker logout || true'
+        }
+
         success {
             echo 'DevSecOps CI/CD pipeline completed successfully.'
         }
 
         failure {
             echo 'DevSecOps CI/CD pipeline failed. Check Jenkins logs.'
-        }
 
-        always {
-            sh '''
-                docker logout || true
-            '''
+            emailext(
+                subject: "FAILED: DevSecOps Pipeline - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """Pipeline failed.
+
+Job: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+URL: ${env.BUILD_URL}
+
+Security reports attached if generated.
+""",
+                to: "${ALERT_EMAIL}",
+                attachmentsPattern: "trivy-report/*.txt,dependency-check-report/*.html,zap-report/*.html"
+            )
         }
     }
 }
