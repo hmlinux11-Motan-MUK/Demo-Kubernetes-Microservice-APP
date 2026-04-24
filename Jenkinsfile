@@ -235,7 +235,10 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'trivy-report/*.txt,dependency-check-report/*,zap-report/*', allowEmptyArchive: true
+            sh 'ls -R trivy-report dependency-check-report zap-report || true'
+
+            archiveArtifacts artifacts: 'trivy-report/**/*,dependency-check-report/**/*,zap-report/**/*', allowEmptyArchive: true
+
             sh 'docker logout || true'
         }
 
@@ -257,7 +260,7 @@ URL: ${env.BUILD_URL}
 Security reports attached if generated.
 """,
                 to: "${ALERT_EMAIL}",
-                attachmentsPattern: "trivy-report/*.txt,dependency-check-report/*.html,zap-report/*.html"
+                attachmentsPattern: "trivy-report/**/*.txt,dependency-check-report/**/*.html,zap-report/**/*.html"
             )
         }
     }
